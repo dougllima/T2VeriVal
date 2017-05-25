@@ -1,0 +1,97 @@
+<!--Created with JFLAP 4.0b14.-->
+<structure>
+    <type>mealy</type>
+    <automaton>
+        <!--The list of states.-->
+        <state id="0" name="0c">
+            <x>262.0</x>
+            <y>-54.0</y>
+            <initial/>
+        </state>
+        <state id="1" name="5c">
+            <x>262.0</x>
+            <y>64.0</y>
+        </state>
+        <state id="2" name="10c">
+            <x>431.0</x>
+            <y>122.0</y>
+        </state>
+        <state id="3" name="15c">
+            <x>100.0</x>
+            <y>122.0</y>
+        </state>
+        <!--The list of transitions.-->
+        <transition>
+            <from>1</from>
+            <to>2</to>
+            <read>n()</read>
+            <transout/>
+        </transition>
+        <transition>
+            <from>2</from>
+            <to>3</to>
+            <read>n()</read>
+            <transout/>
+        </transition>
+        <transition>
+            <from>3</from>
+            <to>0</to>
+            <read>q()</read>
+            <transout>c4</transout>
+        </transition>
+        <transition>
+            <from>2</from>
+            <to>0</to>
+            <read>d()</read>
+            <transout>c0</transout>
+        </transition>
+        <transition>
+            <from>1</from>
+            <to>3</to>
+            <read>d()</read>
+            <transout/>
+        </transition>
+        <transition>
+            <from>3</from>
+            <to>0</to>
+            <read>n()</read>
+            <transout>c0</transout>
+        </transition>
+        <transition>
+            <from>2</from>
+            <to>0</to>
+            <read>q()</read>
+            <transout>c3</transout>
+        </transition>
+        <transition>
+            <from>0</from>
+            <to>2</to>
+            <read>d()</read>
+            <transout/>
+        </transition>
+        <transition>
+            <from>0</from>
+            <to>1</to>
+            <read>n()</read>
+            <transout/>
+        </transition>
+        <transition>
+            <from>1</from>
+            <to>0</to>
+            <read>q()</read>
+            <transout>c2</transout>
+        </transition>
+        <transition>
+            <from>3</from>
+            <to>0</to>
+            <read>d()</read>
+            <transout>c1</transout>
+        </transition>
+        <transition>
+            <from>0</from>
+            <to>0</to>
+            <read>q()</read>
+            <transout>c1</transout>
+        </transition>
+    </automaton>
+</structure>
