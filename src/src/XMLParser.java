@@ -23,7 +23,7 @@ import org.xml.sax.SAXException;
 class XMLParser {
     static MealyMachine createMachine(String fileName) throws IOException, SAXException, ParserConfigurationException {
         try {
-            File file = new File("./tests/"+fileName);
+            File file = new File("tests/" + fileName + ".jff");
 
             DocumentBuilder dBuilder = DocumentBuilderFactory.newInstance()
                     .newDocumentBuilder();
