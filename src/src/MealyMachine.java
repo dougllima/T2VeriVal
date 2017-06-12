@@ -8,11 +8,12 @@ import java.util.List;
  * Created by douglas.leite on 25/05/2017.
  */
 class MealyMachine {
-    List<Status> statuses;
-    HashMap<Status, List<Transition>> transitions;
+    int initialStatus;
+    HashMap<Integer, Status> statuses;
+    HashMap<Integer, HashMap<String, Transition>> transitions;
 
     MealyMachine() {
-        statuses = new ArrayList<>();
+        statuses = new HashMap<>();
         transitions = new HashMap<>();
     }
 }
@@ -20,14 +21,13 @@ class MealyMachine {
 class Status {
     String name;
     int id;
-    boolean initial;
 
-    Status(String name, int id, boolean initial) {
+    Status(String name, int id) {
         this.name = name;
         this.id = id;
-        this.initial = initial;
     }
-    Status(){
+
+    Status() {
     }
 }
 

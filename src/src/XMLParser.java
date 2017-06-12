@@ -3,6 +3,7 @@ package src;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import javax.xml.parsers.DocumentBuilder;
@@ -57,16 +58,16 @@ class XMLParser {
 
                         String name = nodeMap.getNamedItem("name").getNodeValue();
                         int id = Integer.parseInt(nodeMap.getNamedItem("id").getNodeValue());
-                        boolean initial = false;
 
                         NodeList childNodes = tempNode.getChildNodes();
                         for (int j = 0; j < childNodes.getLength(); j++) {
-                            if (childNodes.item(j).getNodeName() == "initial")
-                                initial = true;
+                            if (childNodes.item(j).getNodeName() == "initial") {
+                                machine.initialStatus = id;
+                            }
                         }
 
-                        status = new Status(name, id, initial);
-                        machine.statuses.add(id, status);
+                        status = new Status(name, id);
+                        machine.statuses.put(id, status);
                     }
                 } else if (Objects.equals(tempNode.getNodeName(), "transition")) {
                     NodeList transitionNodes = tempNode.getChildNodes();
@@ -100,9 +101,9 @@ class XMLParser {
                                 break;
                         }
                     }
-                    List<Transition> t = machine.transitions.getOrDefault(fromStatus, new ArrayList<>());
-                    t.add(transition);
-                    machine.transitions.put(fromStatus, t);
+                    HashMap<String, Transition> t = machine.transitions.getOrDefault(fromStatus.id, new HashMap<>());
+                    t.put(transition.read, transition);
+                    machine.transitions.put(fromStatus.id, t);
                 } else if (tempNode.hasChildNodes()) {
                     // loop again if has child nodes
                     printNote(machine, tempNode.getChildNodes());
