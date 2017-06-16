@@ -5,11 +5,7 @@ import org.junit.*;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
+import java.util.Arrays;
 
 /**
  * Created by douglas.leite on 23/05/2017.
@@ -24,7 +20,7 @@ class CodeGenerator {
     CodeGenerator(String fileName) {
         try {
             this.fileName = fileName;
-            this.machine = XMLParser.createMachine(fileName);
+            this.machine = new MealyMachine(fileName);
             this.tests = new TestCases(fileName);
         } catch (Exception e) {
             e.printStackTrace();
@@ -41,34 +37,37 @@ class CodeGenerator {
                     .addAnnotation(Before.class)
                     .addModifiers(Modifier.PUBLIC)
                     .returns(void.class)
-                    .addStatement("$T " + varName + " = new $T()", className, className)
-                    .addStatement("//Implemente o metodo setup aqui!")
+                    .addStatement("$L = new $T()", varName, className)
                     .build();
 
             TypeSpec.Builder classSpec = TypeSpec.classBuilder(fileName + "Test")
+                    .addField(className, varName)
                     .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
 
             classSpec.addMethod(beforeMethod);
 
-            // TODO - Adicionar os outros testes conforme a maquina.
-
-            Status actualState = machine.statuses.get(machine.initialStatus);
-
             int cont = 1;
             for (String[] test : tests.cases) {
+                State actualState = machine.statuses.get(machine.initialStatus);
                 MethodSpec.Builder testMethod = MethodSpec.methodBuilder("testCase" + cont)
+                        .addJavadoc("Caso de teste para a sequencia de entradas: \n$L\n", Arrays.toString(test))
                         .addAnnotation(Test.class)
                         .returns(void.class);
 
                 for (String s : test) {
-                    Transition transition = machine.transitions.get(actualState.id).get(s+"()");
+                    if (s.indexOf('(') == -1)
+                        s += "()";
+                    Transition transition = machine.transitions.get(actualState.id).get(s);
                     if (transition != null)
                         actualState = transition.to;
-
-                    testMethod.addStatement("assertEquals($S(), " + transition.transout + ")", s);
+                    if (transition.transout != null)
+                        testMethod.addStatement("assertEquals($L.$L, $S)", varName, s, transition.transout);
+                    else
+                        testMethod.addStatement("$L.$L", varName, s);
                 }
 
                 classSpec.addMethod(testMethod.build());
+                cont++;
             }
 
             JavaFile javaFile = JavaFile.builder("", classSpec.build())

@@ -2,11 +2,7 @@ package src;
 
 public class Main {
     public static void main(String[] args) {
-        try {
-            CodeGenerator generator = new CodeGenerator("VendingMachine");
-            generator.makeItRain();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        CodeGenerator generator = new CodeGenerator(args.length < 1 ? "VendingMachine" : args[0]);
+        generator.makeItRain();
     }
 }
