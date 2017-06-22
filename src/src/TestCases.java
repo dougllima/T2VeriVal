@@ -1,50 +1,59 @@
 package src;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Paths;
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Criado por douglas.leite Parte do projeto T2VeriVal
- *
+ * <p>
  * 25/05/2017.
  */
 
-class TestCases {
-	List<String[]> cases = new ArrayList<>();
+public class TestCases {
+    List<String[]> cases = new ArrayList<>();
 
-	TestCases(String fileName) {
-		BufferedReader br = null;
+    public TestCases(String fileName) throws Exception {
+        BufferedReader br = null;
 
-		try {
-			br = new BufferedReader(new FileReader("tests/SequenciasDeTeste-" + fileName + ".txt"));
+        try {
+            if(fileName.isEmpty())
+                throw new InvalidParameterException("Nome do arquivo não informado");
 
-			String line;
+            File f = new File(Paths.get("").toAbsolutePath().toString() + "/");
+            File[] matchingFiles = f.listFiles((dir, name) -> name.contains(fileName) && name.endsWith("txt"));
 
-			while ((line = br.readLine()) != null) {
-				int index = line.indexOf('[');
-				if (index > -1) {
-					String sub = line.substring(index);
-					if (sub != "") {
-						sub = sub.replace("[", "");
-						sub = sub.replace("]", "");
-						sub = sub.replace(" ", "");
-						cases.add(sub.split(","));
-					}
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				if (br != null)
-					br.close();
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			}
-		}
-	}
+            if ((matchingFiles != null ? matchingFiles.length : 0) > 0) {
+                br = new BufferedReader(new FileReader(matchingFiles[0].getPath()));
+
+                String line;
+
+                while ((line = br.readLine()) != null) {
+                    int index = line.indexOf('[');
+                    if (index > -1) {
+                        String sub = line.substring(index);
+                        if (!Objects.equals(sub, "")) {
+                            sub = sub.replace("[", "");
+                            sub = sub.replace("]", "");
+                            sub = sub.replace(" ", "");
+                            cases.add(sub.split(","));
+                        }
+                    }
+                }
+            } else
+                throw new FileNotFoundException("Arquivo .txt não localizado");
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            try {
+                if (br != null)
+                    br.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
 }

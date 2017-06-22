@@ -1,89 +1,196 @@
 package src;
 
-import com.squareup.javapoet.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
-import src.MealyMachine.State;
-import src.MealyMachine.Transition;
-
-import org.junit.*;
-import org.junit.internal.runners.JUnit38ClassRunner;
-
-import javax.lang.model.element.Modifier;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
-import java.util.Arrays;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.security.InvalidParameterException;
+import java.util.HashMap;
+import java.util.Objects;
 
 /**
- * Created by douglas.leite on 23/05/2017.
+ * Criado por Douglas Lima
+ * Parte do projeto T2VeriVal
  * <p>
- * Classe para gerar o cÃ³digo executavel atravez da biblioteca JavaPoet
+ * 25/05/2017.
  */
-class CodeGenerator {
-	String fileName;
-	MealyMachine machine;
-	TestCases tests;
 
-	CodeGenerator(String fileName) {
-		try {
-			this.fileName = fileName;
-			this.machine = new MealyMachine(fileName);
-			this.tests = new TestCases(fileName);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+public class MealyMachine {
+    int initialStatus;
+    String fileName;
+    HashMap<Integer, State> statuses;
+    HashMap<Integer, HashMap<String, Transition>> transitions;
 
-	void makeItRain() {
-		try {
-			String varName = fileName.toLowerCase();
+    public MealyMachine(String fileName) {
+        statuses = new HashMap<>();
+        transitions = new HashMap<>();
+        this.fileName = fileName;
+    }
 
-			ClassName className = ClassName.get("", fileName);
+    public void populateMachine() throws Exception {
+        try {
+            if(fileName.isEmpty())
+                throw new InvalidParameterException("Nome do arquivo não informado");
 
-			MethodSpec beforeMethod = MethodSpec.methodBuilder("init").addAnnotation(Before.class)
-					.addModifiers(Modifier.PUBLIC).returns(void.class).addStatement("$L = new $T()", varName, className)
-					.build();
+            File f = new File(Paths.get("").toAbsolutePath().toString() + "/");
+            File[] matchingFiles = f.listFiles((dir, name) -> name.contains(fileName) && name.endsWith("jff"));
 
-			TypeSpec.Builder classSpec = TypeSpec.classBuilder(fileName + "Test").addField(className, varName)
-					.addModifiers(Modifier.PUBLIC, Modifier.FINAL);
+            if (matchingFiles.length > 0) {
+                File file = matchingFiles[0];
 
-			classSpec.addMethod(beforeMethod);
+                DocumentBuilder dBuilder = null;
+                try {
+                    dBuilder = DocumentBuilderFactory
+                            .newInstance()
+                            .newDocumentBuilder();
+                } catch (ParserConfigurationException e) {
+                    e.printStackTrace();
+                }
 
-			int cont = 1;
-			for (String[] test : tests.cases) {
-				State actualState = machine.statuses.get(machine.initialStatus);
-				MethodSpec.Builder testMethod = MethodSpec.methodBuilder("testCase" + cont)
-						.addModifiers(Modifier.PUBLIC)
-						.addJavadoc("Caso de teste para a sequencia de entradas: \n$L\n", Arrays.toString(test))
-						.addAnnotation(Test.class).returns(void.class);
+                Document doc = null;
+                try {
+                    if (dBuilder != null) {
+                        doc = dBuilder.parse(file);
+                    }
+                } catch (SAXException | IOException e) {
+                    e.printStackTrace();
+                }
 
-				for (String s : test) {
-					if (s.indexOf('(') == -1)
-						s += "()";
-					Transition transition = machine.transitions.get(actualState.id).get(s);
-					if (transition != null) {
-						actualState = transition.to;
-						if (transition.transout != null)
-							testMethod.addStatement("assertEquals($L.$L, $L)", varName, s, transition.transout);
-						else
-							testMethod.addStatement("$L.$L", varName, s);
-					}
-				}
+                if (doc != null && doc.hasChildNodes()) {
+                    populateMachine(doc.getChildNodes());
+                }
+            } else
+                throw new FileNotFoundException("Arquivo .jff não localizado");
+        } catch (Exception e) {
+            throw e;
+        }
+    }
 
-				classSpec.addMethod(testMethod.build());
-				cont++;
-			}
+    private void populateMachine(NodeList nodeList) {
+        for (int i = 0; i < nodeList.getLength(); i++) {
 
-			JavaFile javaFile = JavaFile.builder("", classSpec.build()).indent("\t")
-					.addStaticImport(Assert.class,"*")
-					.build();
+            Node tempNode = nodeList.item(i);
 
-			File f = new File(fileName);
-			if (!f.exists())
-				if (!f.mkdir())
-					throw new Exception("NÃ£o foi possivel criar o diretorio informado");
-			javaFile.writeTo(f);
+            // Verifica se o nodo atual � um elemento
+            if (tempNode.getNodeType() == Node.ELEMENT_NODE) {
 
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+                // Verifica se o nodo atual � um estado
+                if (Objects.equals(tempNode.getNodeName(), "state")) {
+                    //Trata quando o nodo for um Estado
+                    handleState(tempNode);
+                }
+                // Verifica se o nodo atual � uma Transa��o
+                if (Objects.equals(tempNode.getNodeName(), "transition")) {
+                    //Trata quando o nodo for uma Transi��o
+                    handleTransition(tempNode);
+                }
+                // Verifica se o nodo atual tem filhos para seguir na recurs�o
+                if (tempNode.hasChildNodes()) {
+                    populateMachine(tempNode.getChildNodes());
+                }
+            }
+        }
+    }
+
+    private void handleState(Node node) {
+        //Verifica se o nodo tem atributos (s� o estados tem nesse modelo)
+        if (node.hasAttributes()) {
+            NamedNodeMap nodeMap = node.getAttributes();
+
+            String name = nodeMap.getNamedItem("name").getNodeValue();
+            int id = Integer.parseInt(nodeMap.getNamedItem("id").getNodeValue());
+
+            NodeList childNodes = node.getChildNodes();
+            for (int j = 0; j < childNodes.getLength(); j++) {
+                if (Objects.equals(childNodes.item(j).getNodeName(), "initial")) {
+                    this.initialStatus = id;
+                }
+            }
+
+            State state = new State(name, id);
+            this.statuses.put(id, state);
+        }
+    }
+
+    private void handleTransition(Node node) {
+        NodeList transitionNodes = node.getChildNodes();
+        Transition transition = new Transition();
+        State fromState = new State();
+
+        // Anda por todos nodos internos da transa��o
+        for (int j = 0; j < transitionNodes.getLength(); j++) {
+            Node transitionTemp = transitionNodes.item(j);
+            String s;
+            Node n;
+
+            // Verifica o tipo do nodo interno da transa��o
+            switch (transitionTemp.getNodeName()) {
+
+                // Estado antes da transa��o
+                case "from":
+                    n = transitionTemp.getFirstChild();
+                    s = n.getNodeValue();
+                    fromState = this.statuses.get(Integer.parseInt(s));
+                    transition.from = fromState;
+                    break;
+
+                // Estado depois
+                case "to":
+                    n = transitionTemp.getFirstChild();
+                    s = n.getNodeValue();
+                    transition.to = this.statuses.get(Integer.parseInt(s));
+                    break;
+
+                // Entrada
+                case "read":
+                    n = transitionTemp.getFirstChild();
+                    if (n != null)
+                        transition.read = n.getNodeValue();
+                    break;
+
+                // Sa�da
+                case "transout":
+                    n = transitionTemp.getFirstChild();
+                    if (n != null)
+                        transition.transout = n.getNodeValue();
+                    break;
+            }
+        }
+        HashMap<String, Transition> t = this.transitions.getOrDefault(fromState.id, new HashMap<>());
+        t.put(transition.read, transition);
+        this.transitions.put(fromState.id, t);
+    }
+
+    class State {
+        String name;
+        int id;
+
+        State(String name, int id) {
+            this.name = name;
+            this.id = id;
+        }
+
+        State() {
+        }
+    }
+
+    class Transition {
+        State from;
+        State to;
+
+        String read;
+        String transout;
+
+        Transition() {
+        }
+    }
 }
